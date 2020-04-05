@@ -1,79 +1,81 @@
-$(document).ready(function () {
-var config = {
-    apiKey: "AIzaSyDtR_Y1KmpfXmXf2FtSi_gD95yp5nomOTM",
-    authDomain: "train-app-hw.firebaseapp.com",
-    databaseURL: "https://train-app-hw.firebaseio.com",
-    projectId: "train-app-hw",
-    storageBucket: "train-app-hw.appspot.com",
-    messagingSenderId: "27551719601"
-};
-    
-    firebase.initializeApp(config);
+window.onload = function () {
+    var frequency;
+    var minutesAway;
+    var nextArrival;
+    var first;
+    var name;
+    var dest;
+    var counter = 0;
 
-    var database = firebase.database();
+    // Your web app's Firebase configuration
+    var firebaseConfig = {
+            apiKey: "AIzaSyCSRRh1c8X7zwZaW-zCq6Hi_wMKBtYSyOk",
+            authDomain: "train-scheduler-fa9f2.firebaseapp.com",
+            databaseURL: "https://train-scheduler-fa9f2.firebaseio.com",
+            projectId: "train-scheduler-fa9f2",
+            storageBucket: "train-scheduler-fa9f2.appspot.com",
+            messagingSenderId: "313125405669",
+            appId: "1:313125405669:web:cdeaa1a035f3b79e25a50c",
+            measurementId: "G-0R2G2NDJHE"
+    };
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
 
-    // Capture Button Click
-    $("#addTrain").on("click", function (event) {
-        event.preventDefault();
+    // setting database to a variable
+    const db = firebase.database().ref();
 
-        // Grabbed values from text boxes
-        var trainName = $("#trainName").val().trim();
-        var destination = $("#destination").val().trim();
-        var firstTrain = $("#firstTrain").val().trim();
-        var freq = $("#interval").val().trim();
+    // grabbing variables from database
+    db.on("value", function (snapshot) {
+        //using an if statement to stop initial submit from posting twice
+        if (counter < 1) {
+            //appending variables from database
+            $("#body").append("<tr><td>" + snapshot.val().name + "</td><td>" + snapshot.val().dest + "</td><td>" + snapshot.val().frequency + "</td><td>" + snapshot.val().nextArrival + "</td><td>" + snapshot.val().minutesAway + "</td></tr>");
+            counter += 1;
+        }
+    })
 
-        // Code for handling the push
-        database.ref().push({
-            trainName: trainName,
-            destination: destination,
-            firstTrain: firstTrain,
-            frequency: freq
+    // when clicking submit button
+    $("#submit").on("click", function (event) {
+        //setting variables from values obtained
+        first = $("#first").val();
+        name = $("#trainName").val();
+        dest = $("#destination").val();
+        frequency = $("#frequency").val();
+
+        //calling function to compute times
+        time();
+
+        //sending variables to database
+        db.set({
+            name: name,
+            dest: dest,
+            frequency: frequency,
+            nextArrival: nextArrival,
+            minutesAway: minutesAway
         });
+
+        //adding new row to table
+        $("#body").append("<tr><td>" + name + "</td><td>" + dest + "</td><td>" + frequency + "</td><td>" + nextArrival + "</td><td>" + minutesAway + "</td></tr>")
+
     });
 
+    // function to calculate nextArrival & minutesAway
+    function time() {
+        // First Time (pushed back 1 year to make sure it comes before current time)
+        var firstTimeConverted = moment(first, "HH:mm").subtract(1, "years");
 
-    // Firebase watcher + initial loader HINT: This code behaves similarly to .on("value")
-    database.ref().on("child_added", function (childSnapshot) {
+        // Difference between the times
+        var diffTime = moment().diff(moment(firstTimeConverted), "minutes");
 
-            var newTrain = childSnapshot.val().trainName;
-            var newLocation = childSnapshot.val().destination;
-            var newFirstTrain = childSnapshot.val().firstTrain;
-            var newFreq = childSnapshot.val().frequency;
+        // Time apart set to a positive number(remainder)
+        var remainder = diffTime % frequency;
 
-            // First Time (pushed back 1 year to make sure it comes before current time)
-            var startTimeConverted = moment(newFirstTrain, "hh:mm").subtract(1, "years");
+        // Minute Until Train
+        minutesAway = frequency - remainder;
 
-            // Current Time
-            var currentTime = moment();
+        // Next Train
+        var nextTrain = moment().add(minutesAway, "minutes");
+        nextArrival = moment(nextTrain).format("hh:mm");
+    };
 
-            // Difference between the times
-            var diffTime = moment().diff(moment(startTimeConverted), "minutes");
-
-            // Time apart (remainder)
-            var tRemainder = diffTime % newFreq;
-
-            // Minute(s) Until Train
-            var tMinutesTillTrain = newFreq - tRemainder;
-
-            // Next Train
-            var nextTrain = moment().add(tMinutesTillTrain, "minutes");
-            var catchTrain = moment(nextTrain).format("HH:mm");
-
-            // Display On Page
-            $("#all-display").append(
-                ' <tr><td>' + newTrain +
-                ' </td><td>' + newLocation +
-                ' </td><td>' + newFreq +
-                ' </td><td>' + catchTrain +
-                ' </td><td>' + tMinutesTillTrain + ' </td></tr>');
-
-            // Clear input fields
-            $("#trainName, #destination, #firstTrain, #interval").val("");
-            return false;
-        },
-        //Handle the errors
-        function (errorObject) {
-            console.log("Errors handled: " + errorObject.code);
-        });
-
-}); //end document ready
+};
