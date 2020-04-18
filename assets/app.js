@@ -49,7 +49,7 @@ window.onload = function () {
         frequency = $("#frequency").val();
 
         //calling function to compute times
-        time();
+        // time();
 
         //sending variables to database
         db.push({
