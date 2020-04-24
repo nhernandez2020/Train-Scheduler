@@ -32,21 +32,23 @@ window.onload = function () {
     db.on("child_added", function (snapshot) {
         //using an if statement to stop initial submit from posting twice
         console.log(snapshot.val())
-        let train=calculateTrain(snapshot.val().first)
+        let train=calculateTrain(snapshot.val().firstArival,snapshot.val().frequency)
         // if (counter < 1) {
             //appending variables from database
-            $("#body").append("<tr><td>" + snapshot.val().name + "</td><td>" + snapshot.val().dest + "</td><td>" + snapshot.val().frequency + "</td><td>" + train.nextArrival + "</td><td>" + train.minutesAway + "</td></tr>");
+            $("#all-display").append("<tr><td>" + snapshot.val().name + "</td><td>" + snapshot.val().dest + "</td><td>" + snapshot.val().frequency + "</td><td>" + train.nextArrival + "</td><td>" + train.minutesAway + "</td></tr>");
 
         // }
     })
 
     // when clicking submit button
-    $("#submit").on("click", function (event) {
+    $("#addTrain").on("click", function (event) {
+        event.preventDefault();
+        
         //setting variables from values obtained
-        first = $("#first").val();
+        first = $("#firstTrain").val();
         name = $("#trainName").val();
         dest = $("#destination").val();
-        frequency = $("#frequency").val();
+        frequency = $("#interval").val();
 
         //calling function to compute times
         //time();
@@ -68,8 +70,8 @@ window.onload = function () {
         })
         $("#trainName").val("")
         $("#destination").val("")
-        $("#first").val("")
-        $("#fequency").val("")
+        $("#firstTrain").val("")
+        $("#interval").val("")
     
         //adding new row to table
         // $("#body").append("<tr><td>" + name + "</td><td>" + dest + "</td><td>" + frequency + "</td><td>" + nextArrival + "</td><td>" + minutesAway + "</td></tr>")
@@ -77,9 +79,9 @@ window.onload = function () {
     });
 
     // function to calculate nextArrival & minutesAway
-    function calculateTrain(first) {
+    function calculateTrain(first,frequency) {
         // First Time (pushed back 1 year to make sure it comes before current time)
-        var firstTimeConverted = moment(first, "HH:mm").subtract(1, "years");
+        var firstTimeConverted = moment(first, "HH:mm");
 
         // Difference between the times
         var diffTime = moment().diff(moment(firstTimeConverted), "minutes");
@@ -88,11 +90,12 @@ window.onload = function () {
         var remainder = diffTime % frequency;
 
         // Minute Until Train
-        minutesAway = frequency - remainder;
+        minutesAway = remainder;
 
         // Next Train
         var nextTrain = moment().add(minutesAway, "minutes");
         nextArrival = moment(nextTrain).format("hh:mm");
+        console.log(`nextArrival: ${nextArrival}, minutesAway: ${minutesAway}`);
         return({nextArrival:nextArrival,minutesAway:minutesAway})
     };
 
